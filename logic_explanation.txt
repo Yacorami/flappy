@@ -1,0 +1,86 @@
+FLAPPY BIRD - LOGIC EXPLANATION
+================================
+
+Overview
+--------
+This is a single-file Flappy Bird clone built with plain HTML, CSS, and JavaScript.
+The entire game runs on an HTML5 <canvas> element using a requestAnimationFrame loop.
+
+Game Constants
+--------------
+- Canvas size: 420 x 680 pixels
+- GRAVITY: 1700 px/s^2 (pulls the bird downward every frame)
+- FLAP_VY: -520 px/s (upward velocity applied on each flap)
+- PIPE_SPEED: 240 px/s (how fast pipes scroll left)
+- PIPE_W: 78 px (pipe width)
+- PIPE_GAP: 170 px (vertical gap between top and bottom pipe)
+- PIPE_SPAWN_EVERY: 1.35 seconds (interval between new pipe pairs)
+- GROUND_H: 90 px (height of the ground strip at the bottom)
+
+Game States
+-----------
+1. Idle (not started): The bird bobs gently using a sine wave. A start overlay
+   is shown prompting the player to flap.
+2. Running (started = true, gameOver = false): Physics and pipe logic are active.
+3. Game Over (gameOver = true): A game-over panel is shown with the current score
+   and best score. A restart button appears.
+
+Bird Physics
+------------
+- The bird is represented as a circle with radius 16 px.
+- Every frame, GRAVITY is added to the bird's vertical velocity (vy).
+- The bird's Y position is updated by vy * dt (delta time in seconds).
+- When the player flaps, vy is instantly set to FLAP_VY (upward impulse).
+- The bird's visual rotation is derived from its current vy, clamped between
+  -0.45 rad (nose up) and 1.1 rad (nose down / diving).
+- The bird cannot go above the top of the canvas (vy is zeroed if it does).
+
+Pipe Logic
+----------
+- A new pipe pair is spawned off the right edge every 1.35 seconds.
+- Each pipe stores: x position, topH (height of the top pipe), and a "passed" flag.
+- The gap between the top and bottom pipes is always PIPE_GAP (170 px).
+- The vertical position of each gap is randomized within safe bounds.
+- Every frame, all pipes move left by PIPE_SPEED * dt pixels.
+- Pipes that move fully off the left edge are removed from the array.
+- When a pipe's right edge passes behind the bird's left edge, the "passed" flag
+  is set to true and the score increments by 1.
+
+Collision Detection
+-------------------
+- Collision uses a circle-vs-rectangle test (circleRectCollide function).
+- The bird's circle is tested against the top pipe rectangle and the bottom pipe
+  rectangle for every active pipe.
+- If the bird's circle overlaps either rectangle, die() is called.
+- If the bird's bottom touches the ground (y + r >= H - GROUND_H), die() is called.
+
+Scoring & Best Score
+--------------------
+- Score increases by 1 each time the bird fully passes a pipe pair.
+- The best (high) score is persisted in localStorage under the key "flappy_best".
+- On game over, if the current score exceeds the stored best, the best is updated.
+
+Main Game Loop
+--------------
+The loop runs via requestAnimationFrame(frame):
+1. Calculate dt = time elapsed since last frame (capped at 33 ms to avoid
+   large jumps after tab switches or slowdowns).
+2. Call update(dt): apply physics, move pipes, check collisions, update score.
+3. Draw everything in order: background, pipes, bird, ground, HUD, overlays.
+4. Schedule the next frame.
+
+Input Handling
+--------------
+- Space key or pointer (click/tap) on the canvas → flap()
+- R key or Restart button → reset() (resets all state, hides restart button)
+- On game over, flap input is ignored until the player resets.
+
+Rendering Layers (draw order)
+------------------------------
+1. Background: sky gradient + decorative hills
+2. Pipes: green rectangles with darker lips and a subtle white shine
+3. Bird: yellow circle with a semi-transparent wing, white eye, dark pupil, orange beak
+4. Ground: brown strip with a green top edge and faint horizontal lines
+5. HUD: current score (large, centered) and best score (smaller, below)
+6. Start overlay: shown before the first flap
+7. Game-over overlay: shown after a collision or ground hit
